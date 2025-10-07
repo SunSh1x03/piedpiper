@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Pied Piper — Homage Lab</title>
+<style>
+  :root{
+    --bg:#071129; --panel:#0b1726; --muted:#9fb3d6; --accent:#34d399; --accent2:#60a5fa;
+    --glass: rgba(255,255,255,0.04);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#061022 0%,#071129 60%);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#e6f0ff}
+  .wrap{max-width:1100px;margin:28px auto;padding:18px}
+  header{display:flex;align-items:center;gap:18px}
+  .logo{display:flex;flex-direction:column}
+  .brand{font-weight:900;font-size:22px;letter-spacing:1px}
+  .sub{color:var(--muted);font-size:13px;margin-top:4px}
+  .top-actions{margin-left:auto;display:flex;gap:10px;align-items:center}
+  .btn{background:var(--glass);border:1px solid rgba(255,255,255,0.06);padding:10px 12px;border-radius:10px;color:var(--muted);cursor:pointer}
+  .btn.primary{background:linear-gradient(180deg,var(--accent),#059669);color:#021012;border:0}
+  main{display:grid;grid-template-columns:1fr 420px;gap:18px;margin-top:18px}
+  .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border:1px solid rgba(255,255,255,0.04);padding:14px;border-radius:12px;min-height:160px}
+  h2{margin:0 0 8px;font-size:16px}
+  .muted{color:var(--muted);font-size:13px}
+  textarea{width:100%;min-height:120px;background:transparent;border:1px dashed rgba(255,255,255,0.04);padding:10px;border-radius:8px;color:inherit;resize:vertical}
+  .row{display:flex;gap:8px;align-items:center}
+  .kpi{display:flex;flex-direction:column;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.02);min-width:100px}
+  #graphCanvas{width:100%;height:320px;background:linear-gradient(180deg,#071129,#081827);border-radius:8px;border:1px solid rgba(255,255,255,0.03)}
+  .footer{color:var(--muted);font-size:13px;margin-top:20px;text-align:center}
+  .small{font-size:12px;color:var(--muted)}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .pill{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03)}
+  footer.credit{margin-top:18px;color:var(--muted);font-size:13px;text-align:right}
+  .glow{box-shadow:0 8px 30px rgba(52,211,153,0.08)}
+  .ticker{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;color:#cfeff0}
+  .center{display:flex;align-items:center;justify-content:center}
+  @media(max-width:960px){
+    main{grid-template-columns:1fr}
+    .top-actions{display:none}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">
+        <div class="brand">Pied Piper • Homage Lab</div>
+        <div class="sub">Uma brincadeira interativa inspirada em <em>Silicon Valley</em>. Não é compressão real.</div>
+      </div>
+      <div class="top-actions">
+        <button class="btn" id="btnAbout">Sobre</button>
+        <button class="btn primary" id="btnRun">Compressão Rápida</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>📦 Input / “Fonte”</h2>
+        <div class="muted">Digite texto, cole JSON ou cole um bloco de código. O motor “PiedPipeJS” fará uma compressão fictícia.</div>
+        <textarea id="inputData" placeholder="Cole algo aqui... ex: 'Hello world! Hello world! Hello world!'"></textarea>
+        <div class="controls">
+          <button class="btn primary" id="compressBtn">Comprimir</button>
+          <button class="btn" id="randomBtn">Exemplo: 'Middle-out'</button>
+          <div class="pill small ticker" id="sizeBefore">Antes: — bytes</div>
+          <div class="pill small ticker" id="sizeAfter">Depois: — bytes</div>
+          <div class="pill small" id="ratio">Razão: —</div>
+        </div>
+        <div style="margin-top:12px" id="resultArea" class="small muted">Resultado aparecerá aqui.</div>
+      </section>
+
+      <aside>
+        <div class="card" style="margin-bottom:12px">
+          <h2>🔗 Network / Graph</h2>
+          <canvas id="graphCanvas"></canvas>
+          <div class="small muted" style="margin-top:8px">Clique em um nó para ver detalhes. Os nós representam "peers" do Pied Piper.</div>
+        </div>
+
+        <div class="card">
+          <h2>⚙️ Controls</h2>
+          <div class="row" style="margin-bottom:8px">
+            <div class="kpi"><span class="small muted">Algoritmo</span><strong id="algoLabel">Middle-Out (simulado)</strong></div>
+            <div class="kpi"><span class="small muted">Tempo</span><strong id="timeLabel">— ms</strong></div>
+            <div class="kpi"><span class="small muted">Status</span><strong id="statusLabel">idle</strong></div>
+          </div>
+          <div style="margin-top:8px" class="muted small">Easter eggs:</div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn" id="playTone">▶️ Play Tone</button>
+            <button class="btn" id="peekMap">🔍 Show Graph Data</button>
+            <button class="btn" id="resetGraph">♻️ Reset Graph</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h2>📜 Credits</h2>
+          <div class="small muted">
+            Projetado como homenagem a <strong>Silicon Valley</strong>. Não é software real.  
+            Contribuições: <em>Filipe Penido</em> (você pode editar, customizar e publicar).
+          </div>
+          <footer class="credit">License: MIT</footer>
+        </div>
+      </aside>
+    </main>
+
+    <div class="footer">Divirta-se — este lab é só uma encenação amigável (sem compressão real). • <span class="muted">Middle-out™ (paródia)</span></div>
+  </div>
+
+<script>
+// --------------------------- UTIL ---------------------------
+const $ = sel => document.querySelector(sel);
+const rand = (a,b)=> Math.floor(Math.random()*(b-a+1))+a;
+const now = ()=> performance.now();
+
+// --------------------------- FAKE COMPRESSION "MIDDLE-OUT" ---------------------------
+function fakeCompress(input){
+  const t0 = now();
+  // heuristic: remove repeated phrases, collapse vowels, do silly "encoding"
+  if(!input) return {out:'', ratio:1, time:0};
+  // basic frequency trim
+  const words = input.split(/\s+/);
+  // count frequencies
+  const freq = {};
+  words.forEach(w=> freq[w]=(freq[w]||0)+1);
+  // replace top repeated tokens with tokens like ¶1 ¶2
+  const pairs = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  let encoded = input;
+  let tokenId = 1;
+  pairs.forEach(([tok,ct])=>{
+    if(ct>1 && tok.length>2){
+      const marker = `¶${tokenId++}`;
+      encoded = encoded.split(tok).join(marker);
+    }
+  });
+  // vowel collapse: remove vowels from long words
+  encoded = encoded.replace(/\b([a-zA-Z]{6,})\b/g, (m)=> m.replace(/[aeiouAEIOU]/g,''));
+  // simulate binary-ish encoding
+  const base64fake = btoa(unescape(encodeURIComponent(encoded))).slice(0, Math.max(20, Math.min(200, encoded.length)));
+  const out = base64fake + '…';
+  const t1 = now();
+  const before = new TextEncoder().encode(input).length;
+  const after = new TextEncoder().encode(out).length;
+  return {out, ratio: (after/before).toFixed(3), time: Math.round(t1-t0), before, after};
+}
+
+// --------------------------- UI HOOKS ---------------------------
+const inputEl = $('#inputData');
+const compressBtn = $('#compressBtn');
+const randomBtn = $('#randomBtn');
+const sizeBefore = $('#sizeBefore');
+const sizeAfter = $('#sizeAfter');
+const ratioEl = $('#ratio');
+const resultArea = $('#resultArea');
+const timeLabel = $('#timeLabel');
+const algoLabel = $('#algoLabel');
+const statusLabel = $('#statusLabel');
+const btnRun = $('#btnRun');
+const playTone = $('#playTone');
+const peekMap = $('#peekMap');
+const resetGraph = $('#resetGraph');
+
+function setStatus(s){
+  statusLabel.textContent = s;
+}
+
+// Random example
+randomBtn.addEventListener('click', ()=> {
+  inputEl.value = `middle-out compression is a fictional algorithm invented in Silicon Valley. middle-out middle-out middle-out. ${Array(6).fill('redundant').join(' ')}`;
+});
+
+// Compress action
+async function doCompress(){
+  setStatus('running');
+  const text = inputEl.value;
+  const t0 = now();
+  await new Promise(r=>setTimeout(r,rand(100,350))); // simulate thinking
+  const {out,ratio,time,before,after} = fakeCompress(text);
+  const t1 = now();
+  sizeBefore.textContent = `Antes: ${before} bytes`;
+  sizeAfter.textContent = `Depois: ${after} bytes`;
+  ratioEl.textContent = `Razão: ${ratio}`;
+  timeLabel.textContent = `${time} ms`;
+  resultArea.innerHTML = `<div style="margin-top:8px"><strong class="muted">Saída (preview):</strong><pre style="overflow:auto;background:rgba(0,0,0,0.2);padding:8px;border-radius:8px;margin-top:6px">${escapeHtml(out)}</pre></div>`;
+  setStatus('idle');
+}
+
+compressBtn.addEventListener('click', doCompress);
+btnRun.addEventListener('click', doCompress);
+
+// simple escape for HTML preview
+function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// --------------------------- GRAPH (canvas) ---------------------------
+const canvas = document.getElementById('graphCanvas');
+const ctx = canvas.getContext('2d');
+let DPR = window.devicePixelRatio || 1;
+function resizeCanvas(){
+  const w = canvas.clientWidth;
+  const h = 320; // fixed height
+  canvas.width = Math.floor(w * DPR);
+  canvas.height = Math.floor(h * DPR);
+  canvas.style.height = h + 'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener('resize', ()=>{ resizeCanvas(); drawGraph(); });
+resizeCanvas();
+
+// nodes
+let nodes = [];
+function initGraph(n=12){
+  nodes = [];
+  for(let i=0;i<n;i++){
+    nodes.push({
+      id:i+1,
+      x: rand(60, canvas.clientWidth-60),
+      y: rand(30, 260),
+      vx: (Math.random()-0.5)*1.2,
+      vy: (Math.random()-0.5)*1.2,
+      label: `peer-${i+1}`,
+      color: i===0 ? '#60a5fa' : (i%2? '#34d399' : '#f97316')
+    });
+  }
+  // create edges (random)
+  edges = [];
+  for(let i=0;i<n*1.6;i++){
+    const a = rand(1,n)-1; const b = rand(1,n)-1;
+    if(a!==b) edges.push([a,b]);
+  }
+}
+let edges = [];
+initGraph(12);
+
+// animation
+function drawGraph(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // background
+  ctx.fillStyle = 'rgba(255,255,255,0.02)';
+  ctx.fillRect(0,0,canvas.clientWidth,320);
+  // edges
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  edges.forEach(e=>{
+    const a = nodes[e[0]]; const b = nodes[e[1]];
+    ctx.beginPath();
+    ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+  });
+  // nodes
+  nodes.forEach(n=>{
+    // shadow
+    ctx.beginPath();
+    ctx.fillStyle = n.color;
+    ctx.arc(n.x,n.y,12,0,Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.fillStyle = '#021026';
+    ctx.arc(n.x,n.y,6,0,Math.PI*2);
+    ctx.fill();
+    // label
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.font = '12px system-ui';
+    ctx.fillText(n.label, n.x+16, n.y+4);
+  });
+}
+function step(){
+  // move nodes
+  nodes.forEach(n=>{
+    n.x += n.vx; n.y += n.vy;
+    if(n.x<30 || n.x>canvas.clientWidth-30) n.vx *= -1;
+    if(n.y<30 || n.y>260) n.vy *= -1;
+  });
+  drawGraph();
+  requestAnimationFrame(step);
+}
+requestAnimationFrame(step);
+
+// interactivity: click node
+canvas.addEventListener('click', (ev)=>{
+  const rect = canvas.getBoundingClientRect();
+  const x = (ev.clientX - rect.left);
+  const y = (ev.clientY - rect.top);
+  let hit = null;
+  nodes.forEach(n=>{
+    const dx = n.x - x, dy = n.y - y;
+    if(Math.sqrt(dx*dx+dy*dy) < 14) hit = n;
+  });
+  if(hit){
+    alert(`Peer: ${hit.label}\nID: ${hit.id}\nStatus: OK\nConnections: ${edges.filter(e=>e.includes(hit.id-1)).length}`);
+  }
+});
+
+// --------------------------- TONES (easter egg) ---------------------------
+let audioCtx = null;
+playTone.addEventListener('click', ()=>{
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = 'sine';
+  o.frequency.value = 440;
+  o.connect(g); g.connect(audioCtx.destination);
+  g.gain.value = 0;
+  o.start();
+  g.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 0.05);
+  g.gain.setTargetAtTime(0, audioCtx.currentTime + 0.35, 0.1);
+  o.stop(audioCtx.currentTime + 0.6);
+});
+
+// --------------------------- PEEK / RESET ---------------------------
+peekMap.addEventListener('click', ()=>{
+  const payload = {nodes: nodes.map(n=>({id:n.id,label:n.label})), edges};
+  navigator.clipboard?.writeText(JSON.stringify(payload, null, 2)).then(()=>{
+    alert('Graph JSON copiado para a área de transferência (ou abra o console).');
+    console.log('Graph payload:', payload);
+  }).catch(()=>alert('Abra o console para ver o payload.\n' + JSON.stringify(payload,null,2)));
+});
+resetGraph.addEventListener('click', ()=>{ initGraph(12); });
+
+// --------------------------- INITIAL SAMPLE ---------------------------
+inputEl.value = "The quick brown fox jumped over the quick brown fox. middle-out middle-out middle-out. compression is love compression is life.";
+sizeBefore.textContent = "Antes: — bytes";
+sizeAfter.textContent = "Depois: — bytes";
+ratioEl.textContent = "Razão: —";
+setStatus('idle');
+
+</script>
+</body>
+</html>

@@ -10,20 +10,20 @@
     --glass: rgba(255,255,255,0.04);
   }
   *{box-sizing:border-box}
-  body{margin:0;background:linear-gradient(180deg,#061022 0%,#071129 60%);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#e6f0ff}
+  body{margin:0;background:linear-gradient(180deg,#061022 0%,#071129 60%);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#e6f0ff;line-height:1.55}
   .wrap{max-width:1100px;margin:28px auto;padding:18px}
-  header{display:flex;align-items:center;gap:18px}
+  header{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
   .logo{display:flex;flex-direction:column}
   .brand{font-weight:900;font-size:22px;letter-spacing:1px}
   .sub{color:var(--muted);font-size:13px;margin-top:4px}
   .top-actions{margin-left:auto;display:flex;gap:10px;align-items:center}
   .btn{background:var(--glass);border:1px solid rgba(255,255,255,0.06);padding:10px 12px;border-radius:10px;color:var(--muted);cursor:pointer}
   .btn.primary{background:linear-gradient(180deg,var(--accent),#059669);color:#021012;border:0}
-  main{display:grid;grid-template-columns:1fr 420px;gap:18px;margin-top:18px}
-  .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border:1px solid rgba(255,255,255,0.04);padding:14px;border-radius:12px;min-height:160px}
+  main{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:18px;margin-top:18px}
+  .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border:1px solid rgba(255,255,255,0.04);padding:18px;border-radius:14px;min-height:160px}
   h2{margin:0 0 8px;font-size:16px}
   .muted{color:var(--muted);font-size:13px}
-  textarea{width:100%;min-height:120px;background:transparent;border:1px dashed rgba(255,255,255,0.04);padding:10px;border-radius:8px;color:inherit;resize:vertical}
+  textarea{width:100%;min-height:150px;background:rgba(7,17,41,0.45);border:1px solid rgba(255,255,255,0.05);padding:12px;border-radius:12px;color:inherit;resize:vertical;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.02)}
   .row{display:flex;gap:8px;align-items:center}
   .kpi{display:flex;flex-direction:column;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.02);min-width:100px}
   #graphCanvas{width:100%;height:320px;background:linear-gradient(180deg,#071129,#081827);border-radius:8px;border:1px solid rgba(255,255,255,0.03)}
@@ -35,9 +35,28 @@
   .glow{box-shadow:0 8px 30px rgba(52,211,153,0.08)}
   .ticker{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;color:#cfeff0}
   .center{display:flex;align-items:center;justify-content:center}
-  @media(max-width:960px){
-    main{grid-template-columns:1fr}
-    .top-actions{display:none}
+  @media(max-width:1040px){
+    .wrap{margin:18px auto;padding:16px}
+    main{grid-template-columns:1fr;gap:14px}
+    aside{order:-1}
+  }
+  @media(max-width:720px){
+    header{gap:12px}
+    .brand{font-size:20px}
+    .top-actions{width:100%;margin-left:0;justify-content:stretch}
+    .top-actions .btn{flex:1}
+    .card{padding:16px}
+    textarea{min-height:180px}
+  }
+  @media(max-width:540px){
+    .wrap{padding:14px}
+    header{flex-direction:column;align-items:flex-start}
+    .top-actions{flex-direction:column;gap:8px}
+    .top-actions .btn{width:100%}
+    .controls{flex-direction:column;align-items:stretch}
+    .controls .btn{width:100%}
+    .pill{width:100%;text-align:center}
+    canvas#graphCanvas{height:260px}
   }
 </style>
 </head>
@@ -193,9 +212,14 @@ function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 const canvas = document.getElementById('graphCanvas');
 const ctx = canvas.getContext('2d');
 let DPR = window.devicePixelRatio || 1;
+function graphHeight(){
+  if(window.innerWidth <= 540) return 260;
+  if(window.innerWidth <= 720) return 300;
+  return 320;
+}
 function resizeCanvas(){
   const w = canvas.clientWidth;
-  const h = 320; // fixed height
+  const h = graphHeight();
   canvas.width = Math.floor(w * DPR);
   canvas.height = Math.floor(h * DPR);
   canvas.style.height = h + 'px';
@@ -212,7 +236,7 @@ function initGraph(n=12){
     nodes.push({
       id:i+1,
       x: rand(60, canvas.clientWidth-60),
-      y: rand(30, 260),
+      y: rand(30, graphHeight()-60),
       vx: (Math.random()-0.5)*1.2,
       vy: (Math.random()-0.5)*1.2,
       label: `peer-${i+1}`,
@@ -233,8 +257,9 @@ initGraph(12);
 function drawGraph(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   // background
+  const h = graphHeight();
   ctx.fillStyle = 'rgba(255,255,255,0.02)';
-  ctx.fillRect(0,0,canvas.clientWidth,320);
+  ctx.fillRect(0,0,canvas.clientWidth,h);
   // edges
   ctx.lineWidth = 1;
   ctx.strokeStyle = 'rgba(255,255,255,0.06)';
@@ -265,7 +290,8 @@ function step(){
   nodes.forEach(n=>{
     n.x += n.vx; n.y += n.vy;
     if(n.x<30 || n.x>canvas.clientWidth-30) n.vx *= -1;
-    if(n.y<30 || n.y>260) n.vy *= -1;
+    const limit = graphHeight() - 60;
+    if(n.y<30 || n.y>limit) n.vy *= -1;
   });
   drawGraph();
   requestAnimationFrame(step);

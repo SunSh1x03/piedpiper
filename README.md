@@ -7,6 +7,7 @@ Laboratório front-end inspirado no universo de *Silicon Valley* para brincar co
 - Simular uma experiência interativa de compressão de texto (sem algoritmos reais).
 - Exibir um grafo animado que representa peers da rede Pied Piper.
 - Trazer easter eggs sonoros e interativos para complementar a homenagem à série.
+<img width="903" height="833" alt="image" src="https://github.com/user-attachments/assets/a44d99f0-29bd-466e-b137-c1cbc6f1b63e" />
 
 ## 🚀 Como usar
 

@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Pied Piper — Homenagem (Grafo + Compressão)</title>
+<style>
+  :root{
+    --bg:#080e1c; --panel:#0b1729; --muted:#9fb3d6; --hi:#34d399; --hi2:#60a5fa; --danger:#ef4444;
+    --glass: rgba(255,255,255,0.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 20% -10%,#0d1a36 0%,#080e1c 60%);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#e6f0ff}
+  .wrap{max-width:1200px;margin:24px auto;padding:16px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:38px;height:38px;border-radius:10px;background:conic-gradient(from 200deg at 50% 50%, var(--hi) 0 40%, transparent 40% 100%),linear-gradient(135deg,#0e8f6d,#38bdf8);
+        box-shadow:0 0 0 2px rgba(255,255,255,0.06) inset, 0 8px 20px rgba(52,211,153,0.25)}
+  h1{font-size:18px;margin:0;letter-spacing:.4px}
+  .sub{font-size:12px;color:var(--muted)}
+  .toolbar{display:flex;gap:10px;align-items:center}
+  .btn, select{background:var(--glass);border:1px solid rgba(255,255,255,0.1);color:#e6f0ff;padding:8px 12px;border-radius:12px;cursor:pointer}
+  .btn:hover{background:rgba(255,255,255,0.09)}
+
+  .grid{display:grid;grid-template-columns: 1.1fr .9fr; gap:16px}
+  @media (max-width: 960px){.grid{grid-template-columns:1fr;}}
+
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.04));border:1px solid rgba(255,255,255,0.08);border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+  .card h2{margin:0;padding:14px 16px;background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.07);font-size:16px}
+  .card .body{padding:16px}
+
+  /* Simulador */
+  textarea{width:100%;min-height:120px;background:rgba(5,12,24,.5);border:1px solid rgba(255,255,255,0.08);color:#e6f0ff;border-radius:12px;padding:12px;resize:vertical}
+  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px}
+  .row .grow{flex:1}
+  .meter{height:10px;background:rgba(255,255,255,0.08);border-radius:20px;overflow:hidden}
+  .fill{height:100%;width:0;background:linear-gradient(90deg,var(--hi),var(--hi2));transition:width .4s ease}
+  .stats{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+  .steps{margin-top:10px;font-size:13px;color:#cfe2ff;max-height:150px;overflow:auto;border-left:2px solid rgba(255,255,255,0.1);padding-left:12px}
+
+  /* Grafo */
+  .graphWrap{position:relative;height:480px;border-radius:14px;background:radial-gradient(900px 400px at 70% 20%, rgba(96,165,250,0.12), transparent 60%), rgba(2,8,23,.4);border:1px solid rgba(255,255,255,0.08)}
+  canvas{display:block;width:100%;height:100%}
+  .badge{position:absolute;right:10px;top:10px;background:rgba(8,47,73,.6);border:1px solid rgba(125,211,252,.3);padding:6px 10px;border-radius:999px;font-size:12px;color:#cbeafe}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
+  .tooltip{position:absolute;pointer-events:none;background:rgba(0,0,0,.75);padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);font-size:12px}
+
+  /* Chart (gráfico) */
+  .chart{height:240px;border:1px dashed rgba(255,255,255,0.15);border-radius:12px;display:none;align-items:center;justify-content:center}
+  .chart svg{width:100%;height:100%}
+
+  /* Toast */
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:-80px;transition:bottom .4s ease;z-index:99}
+  .toast .inner{background:rgba(1,20,8,.9);border:1px solid rgba(34,197,94,.5);padding:10px 14px;border-radius:12px;color:#d1fae5;box-shadow:0 10px 30px rgba(34,197,94,.25)}
+  .toast.show{bottom:22px}
+
+  .kbd{border:1px solid rgba(255,255,255,0.2);border-bottom-width:2px;border-radius:6px;padding:2px 6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo" id="logo" title="Clique para um easter egg sonoro"></div>
+        <div>
+          <h1>Pied Piper — Laboratório de Homenagem</h1>
+          <div class="sub">Simulador de compressão (fake) + Grafo animado de peers</div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <label for="viewSel" class="sub">Visualização:</label>
+        <select id="viewSel" title="Alternar entre Grafo (rede) e Gráfico (barras)">
+          <option value="grafo">Grafo (rede de peers)</option>
+          <option value="grafico">Gráfico (barras de throughput)</option>
+        </select>
+        <button class="btn" id="btnMiddle">Ativar “Middle‑Out”</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Simulador de compressão -->
+      <section class="card">
+        <h2>Simulador de Compressão (didático)</h2>
+        <div class="body">
+          <textarea id="txt" placeholder="Cole um texto aqui para ‘comprimir’ de brincadeira…"></textarea>
+          <div class="row">
+            <label for="lvl">Agressividade:</label>
+            <input id="lvl" type="range" min="1" max="9" value="5"/>
+            <div class="grow"></div>
+            <button id="run" class="btn">Comprimir</button>
+            <button id="reset" class="btn" title="Limpar">Limpar</button>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <div class="grow meter" aria-label="Progresso"><div class="fill" id="fill"></div></div>
+          </div>
+          <div class="stats" id="stats"></div>
+          <div class="steps" id="steps" aria-live="polite"></div>
+          <div class="hint">Obs.: é uma simulação lúdica — <b>sem algoritmos reais</b>. Serve para visualizar conceitos como tokenização, remoção de redundâncias e dicionários.</div>
+        </div>
+      </section>
+
+      <!-- Grafo / Gráfico -->
+      <section class="card">
+        <h2>Rede de Peers (Grafo) <span class="sub">— clique e arraste nós; duplo clique cria peer; <span class="kbd">P</span> muda tema</span></h2>
+        <div class="body">
+          <div class="graphWrap" id="graphWrap">
+            <canvas id="graph"></canvas>
+            <div class="badge" id="badge">Grafo</div>
+            <div class="tooltip" id="tip" style="display:none"></div>
+          </div>
+          <div class="chart" id="chart"></div>
+          <div class="hint">“Grafo” (network graph) modela <i>relações</i> entre entidades (peers ↔ conexões). “Gráfico” (chart) é para <i>métricas</i> (ex.: barras de throughput). Aqui usamos ambos para comparação.</div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"><div class="inner" id="toastMsg">Middle‑Out ativado!</div></div>
+
+<script>
+(() => {
+  // ========= Util =========
+  const $ = s => document.querySelector(s);
+  const stats = $('#stats');
+  const steps = $('#steps');
+  const fill = $('#fill');
+  const toast = $('#toast');
+  const toastMsg = $('#toastMsg');
+
+  function showToast(msg){
+    toastMsg.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(()=> toast.classList.remove('show'), 2400);
+  }
+
+  // ========= Easter eggs de áudio (WebAudio) =========
+  const Audio = new (window.AudioContext || window.webkitAudioContext)();
+  function beep(freq=440, time=0.12, type='sine', when=0){
+    const o = Audio.createOscillator();
+    const g = Audio.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.value = 0.001; // start silent (pop fix)
+    o.connect(g); g.connect(Audio.destination);
+    o.start(Audio.currentTime + when);
+    g.gain.exponentialRampToValueAtTime(0.2, Audio.currentTime + when + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, Audio.currentTime + when + time);
+    o.stop(Audio.currentTime + when + time + 0.02);
+  }
+  function arpeggio(base=392){ // G major
+    [0,4,7,12,7,4,0].forEach((s,i)=>beep(base * Math.pow(2, s/12), 0.1, 'triangle', i*0.08));
+  }
+  $('#logo').addEventListener('click', ()=>{ arpeggio(); showToast('♪ Pied Piper!'); });
+
+  // Konami Code → fanfare
+  const konami = ["ArrowUp","ArrowUp","ArrowDown","ArrowDown","ArrowLeft","ArrowRight","ArrowLeft","ArrowRight","b","a"];
+  let keys = [];
+  window.addEventListener('keydown', (e)=>{
+    keys.push(e.key);
+    if(keys.slice(-konami.length).join('').toLowerCase() === konami.join('').toLowerCase()){
+      [329.6,392,493.9,659.3,987.8].forEach((f,i)=>beep(f,0.18,'sawtooth', i*0.18));
+      showToast('Konami ativado!');
+    }
+  });
+
+  // ========= Simulador de Compressão (fake) =========
+  const txt = $('#txt');
+  const lvl = $('#lvl');
+  const run = $('#run');
+  const reset = $('#reset');
+  function simulateCompression(input, level){
+    const original = new TextEncoder().encode(input).length;
+    // Simulação: reduções determinísticas porém “críveis” por nível
+    // 1..9 ≈ 5%..70% (limitado por tamanho / repetição)
+    const redundancyFactor = Math.min(0.7, 0.05 + (level*0.07));
+    const repetitionBoost = Math.min(0.2, (input.match(/\b(\w+)\b(?=.*\b\1\b)/gi)||[]).length * 0.002);
+    const estRatio = Math.max(0.2, 1 - redundancyFactor - repetitionBoost);
+    const compressed = Math.max(10, Math.floor(original * estRatio));
+
+    const pseudoSteps = [
+      'Tokenização inicial',
+      'Remoção de espaços redundantes',
+      'Dicionário de termos frequentes',
+      'Run-Length “criativo”',
+      'Huffman (de brincadeira)',
+      'Middle‑Out pass (fan-service)'
+    ];
+
+    return {original, compressed, ratio: 1 - (compressed/original), steps:pseudoSteps};
+  }
+
+  run.addEventListener('click', ()=>{
+    const v = txt.value.trim();
+    if(!v){ showToast('Cole um texto para comprimir'); return; }
+    steps.innerHTML = '';
+    const {original, compressed, ratio, steps:seq} = simulateCompression(v, +lvl.value);
+    // anima a barra
+    fill.style.width = '0%';
+    let i = 0;
+    const each = () => {
+      if(i < seq.length){
+        steps.innerHTML += `• ${seq[i]}…<br/>`;
+        fill.style.width = `${Math.min(100, (i+1)/seq.length*100)}%`;
+        i++; setTimeout(each, 320);
+      } else {
+        const saved = original - compressed;
+        stats.innerHTML = `Original: <b>${original}</b> bytes · Comprimido: <b>${compressed}</b> bytes · Redução: <b>${(ratio*100).toFixed(1)}%</b> · Salvo: <b>${saved}</b> bytes`;
+        arpeggio(440);
+      }
+    };
+    each();
+  });
+  reset.addEventListener('click', ()=>{ txt.value=''; steps.textContent=''; stats.textContent=''; fill.style.width='0%'; });
+
+  // ========= Grafo de Peers (force layout básico) =========
+  const cvs = $('#graph');
+  const wrap = $('#graphWrap');
+  const tip = $('#tip');
+  const ctx = cvs.getContext('2d');
+  const DPR = Math.min(2, window.devicePixelRatio || 1);
+  function resize(){
+    const r = wrap.getBoundingClientRect();
+    cvs.width = r.width * DPR; cvs.height = r.height * DPR;
+    cvs.style.width = r.width+'px'; cvs.style.height = r.height+'px';
+  }
+  window.addEventListener('resize', resize); resize();
+
+  const NAMES = ['Filipe','Richard','Dinesh','Gilfoyle','Jared','Monica','Hooli','PiperNet','Node‑A','Node‑B','Node‑C','Node‑D'];
+  const nodes = [];
+  const links = [];
+  function addNode(name){
+    const r = wrap.getBoundingClientRect();
+    const n = {id: name || `Peer-${nodes.length+1}`, x: Math.random()*cvs.width, y: Math.random()*cvs.height, vx:0, vy:0, m:1, fixed:false, t: Date.now()};
+    nodes.push(n);
+    // conecta com 2–3 existentes
+    for(let i=0;i<Math.min(3, nodes.length-1);i++){
+      const to = nodes[Math.floor(Math.random()*(nodes.length-1))];
+      if(to && to!==n) links.push({a:n, b:to, w: 0.6 + Math.random()*0.8});
+    }
+    return n;
+  }
+  for(let i=0;i<9;i++) addNode(NAMES[i]||null);
+
+  // força simples
+  function tick(){
+    const kRepel = 2600; // repulsão
+    const kSpring = 0.002; // mola
+    const rest = 120 * DPR; // comprimento alvo
+    const damping = 0.88;
+
+    // repulsão
+    for(let i=0;i<nodes.length;i++){
+      for(let j=i+1;j<nodes.length;j++){
+        const n1 = nodes[i], n2 = nodes[j];
+        let dx = n1.x - n2.x; let dy = n1.y - n2.y; let d2 = dx*dx + dy*dy + 0.01;
+        const f = kRepel / d2;
+        const fx = f*dx; const fy = f*dy;
+        if(!n1.fixed){ n1.vx += fx; n1.vy += fy; }
+        if(!n2.fixed){ n2.vx -= fx; n2.vy -= fy; }
+      }
+    }
+
+    // molas (arestas)
+    links.forEach(L=>{
+      const dx = L.a.x - L.b.x; const dy = L.a.y - L.b.y; const d = Math.sqrt(dx*dx+dy*dy)+0.001;
+      const f = kSpring * (d - rest);
+      const fx = f * (dx/d); const fy = f * (dy/d);
+      if(!L.a.fixed){ L.a.vx -= fx; L.a.vy -= fy; }
+      if(!L.b.fixed){ L.b.vx += fx; L.b.vy += fy; }
+    });
+
+    // integra
+    nodes.forEach(n=>{
+      if(!n.fixed){ n.x += n.vx; n.y += n.vy; n.vx *= damping; n.vy *= damping; }
+      // paredes
+      if(n.x < 20) { n.x=20; n.vx*=-0.6; }
+      if(n.y < 20) { n.y=20; n.vy*=-0.6; }
+      if(n.x > cvs.width-20) { n.x=cvs.width-20; n.vx*=-0.6; }
+      if(n.y > cvs.height-20) { n.y=cvs.height-20; n.vy*=-0.6; }
+    });
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,cvs.width,cvs.height);
+    // glow
+    ctx.fillStyle = 'rgba(3, 7, 18, .3)';
+    ctx.fillRect(0,0,cvs.width,cvs.height);
+
+    // edges
+    ctx.lineWidth = 1.2 * DPR;
+    links.forEach(L=>{
+      const alpha = 0.35 + Math.min(0.6, (Date.now()-Math.min(L.a.t,L.b.t))/3000*0.2);
+      ctx.strokeStyle = `rgba(96,165,250,${alpha})`;
+      ctx.beginPath();
+      ctx.moveTo(L.a.x, L.a.y);
+      ctx.lineTo(L.b.x, L.b.y);
+      ctx.stroke();
+    });
+
+    // nodes
+    nodes.forEach(n=>{
+      const r = 6*DPR;
+      const pulse = 0.4 + 0.6*Math.sin((Date.now()/1000 + (n.id.charCodeAt(0)%7))*2);
+      ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(52,211,153,${0.65 + 0.2*pulse})`;
+      ctx.shadowColor = 'rgba(52,211,153,.6)'; ctx.shadowBlur = 12;
+      ctx.fill(); ctx.shadowBlur = 0;
+    });
+  }
+
+  function frame(){ tick(); draw(); requestAnimationFrame(frame); }
+  frame();
+
+  // interações
+  let drag = null; let offX=0, offY=0;
+  cvs.addEventListener('mousedown', e=>{
+    const r = cvs.getBoundingClientRect();
+    const x = (e.clientX - r.left) * DPR; const y = (e.clientY - r.top) * DPR;
+    for(const n of nodes){
+      const dx = x-n.x, dy=y-n.y; if(dx*dx+dy*dy < (10*DPR)*(10*DPR)){ drag=n; offX=dx; offY=dy; n.fixed=true; break; }
+    }
+  });
+  window.addEventListener('mouseup', ()=>{ if(drag){ drag.fixed=false; drag=null; }});
+  window.addEventListener('mousemove', e=>{
+    const r = cvs.getBoundingClientRect(); const x = (e.clientX - r.left) * DPR; const y = (e.clientY - r.top) * DPR;
+    if(drag){ drag.x = x - offX; drag.y = y - offY; drag.t = Date.now(); }
+
+    // tooltip
+    let found=null;
+    for(const n of nodes){ const dx=x-n.x, dy=y-n.y; if(dx*dx+dy*dy < (9*DPR)*(9*DPR)) { found=n; break; } }
+    if(found){ tip.style.display='block'; tip.style.left=(e.clientX+12)+'px'; tip.style.top=(e.clientY+12)+'px'; tip.textContent = found.id; }
+    else tip.style.display='none';
+  });
+  cvs.addEventListener('dblclick', e=>{
+    const n = addNode(); n.x = Math.random()*cvs.width; n.y=Math.random()*cvs.height; n.t = Date.now(); arpeggio(523.25); showToast('Novo peer conectado');
+  });
+
+  // ========= Alternar Grafo vs Gráfico =========
+  const badge = $('#badge');
+  const chartBox = $('#chart');
+  const sel = $('#viewSel');
+  sel.addEventListener('change', ()=>{
+    const isGraph = sel.value==='grafo';
+    $('#graphWrap').style.display = isGraph? 'block':'none';
+    chartBox.style.display = isGraph? 'none':'flex';
+    badge.textContent = isGraph? 'Grafo':'Gráfico';
+    if(!isGraph) renderChart();
+  });
+
+  function renderChart(){
+    // simples gráfico de barras com SVG, throughput fictício por peer
+    const data = nodes.slice(0,10).map(n=>({name:n.id, v: Math.round(30 + Math.random()*70)}));
+    const w = chartBox.clientWidth, h = chartBox.clientHeight, pad = 28;
+    const max = Math.max(...data.map(d=>d.v));
+    const barW = (w - pad*2) / data.length;
+    const svg = [`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">`];
+    svg.push(`<text x="${pad}" y="18" font-size="12" fill="#cbeafe">Throughput por peer (MB/s)</text>`);
+    data.forEach((d,i)=>{
+      const bh = (h - pad*2) * (d.v/max);
+      const x = pad + i*barW + 6; const y = h - pad - bh;
+      svg.push(`<rect x="${x}" y="${y}" width="${Math.max(8,barW-12)}" height="${bh}" rx="6" fill="url(#g)" stroke="rgba(255,255,255,0.12)"/>`);
+      svg.push(`<text x="${x+4}" y="${h-pad+14}" font-size="11" fill="#9fb3d6" transform="rotate(15 ${x+4},${h-pad+14})">${d.name}</text>`);
+    });
+    svg.push(`<defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#60a5fa"/></linearGradient></defs>`);
+    svg.push('</svg>');
+    chartBox.innerHTML = svg.join('');
+  }
+
+  // ========= Middle-Out button + tecla P (tema) =========
+  $('#btnMiddle').addEventListener('click', ()=>{
+    document.documentElement.style.setProperty('--hi', '#22c55e');
+    document.documentElement.style.setProperty('--hi2', '#34d399');
+    showToast('Middle‑Out… ativado (é só estética)'); arpeggio(659.25);
+  });
+  window.addEventListener('keydown', e=>{
+    if(e.key.toLowerCase()==='p'){
+      const dark = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()==='#080e1c';
+      document.documentElement.style.setProperty('--bg', dark? '#020617':'#080e1c');
+      showToast('Tema alternado');
+    }
+  });
+
+  // ========= Easter egg de texto: digitar "middleout" =========
+  let buffer='';
+  window.addEventListener('keypress', e=>{
+    buffer = (buffer + e.key).slice(-10);
+    if(buffer.toLowerCase().includes('middleout')){
+      showToast('Middle‑Out mode!'); arpeggio(784);
+      buffer='';
+    }
+  });
+})();
+</script>
+</body>
+</html>

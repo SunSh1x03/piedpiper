@@ -19,6 +19,7 @@
   .top-actions{margin-left:auto;display:flex;gap:10px;align-items:center}
   .btn{background:var(--glass);border:1px solid rgba(255,255,255,0.06);padding:10px 12px;border-radius:10px;color:var(--muted);cursor:pointer}
   .btn.primary{background:linear-gradient(180deg,var(--accent),#059669);color:#021012;border:0}
+  .version-badge{padding:8px 12px;border-radius:999px;background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.3);color:#bfdbfe;font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;margin-left:auto}
   main{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:18px;margin-top:18px}
   .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border:1px solid rgba(255,255,255,0.04);padding:18px;border-radius:14px;min-height:160px}
   h2{margin:0 0 8px;font-size:16px}
@@ -47,6 +48,7 @@
     .top-actions .btn{flex:1}
     .card{padding:16px}
     textarea{min-height:180px}
+    .version-badge{margin-left:0}
   }
   @media(max-width:540px){
     .wrap{padding:14px}
@@ -67,6 +69,7 @@
         <div class="brand">Pied Piper • Homage Lab</div>
         <div class="sub">Uma brincadeira interativa inspirada em <em>Silicon Valley</em>. Não é compressão real.</div>
       </div>
+      <div class="version-badge" id="releaseTag">Release —</div>
       <div class="top-actions">
         <button class="btn" id="btnAbout">Sobre</button>
         <button class="btn primary" id="btnRun">Compressão Rápida</button>
@@ -176,6 +179,14 @@ const btnRun = $('#btnRun');
 const playTone = $('#playTone');
 const peekMap = $('#peekMap');
 const resetGraph = $('#resetGraph');
+const releaseTag = $('#releaseTag');
+const btnAbout = $('#btnAbout');
+
+const currentRelease = 'v1.1-Gilfoyle';
+releaseTag.textContent = `Release ${currentRelease}`;
+btnAbout.addEventListener('click', ()=>{
+  alert(`Pied Piper — Homage Lab\nRelease ${currentRelease}\n\nHomenagem fictícia a Silicon Valley. Não há compressão real, apenas uma simulação divertida.`);
+});
 
 function setStatus(s){
   statusLabel.textContent = s;
